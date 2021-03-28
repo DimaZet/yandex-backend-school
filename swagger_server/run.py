@@ -3,23 +3,26 @@ import os
 import connexion
 from werkzeug.exceptions import BadRequest
 
-from swagger_server import db
 from swagger_server import encoder
 from swagger_server.exceptions import EXCEPTION_PRODUCERS
 
 
-def main():
-    class RequestBodyValidator(connexion.decorators.validation.RequestBodyValidator):
-        def validate_schema(self, data, url):
-            exception_producer_key = url.split('8080/')[-1]
-            if self.is_null_value_valid and connexion.utils.is_null(data):
-                return None
-            errors = list(self.validator.iter_errors(data))
-            if errors:
-                if exception_producer_key in EXCEPTION_PRODUCERS:
-                    EXCEPTION_PRODUCERS[exception_producer_key](data, errors)
-                else:
-                    raise BadRequest(description=','.join([e.message for e in errors]))
+class RequestBodyValidator(connexion.decorators.validation.RequestBodyValidator):
+    def validate_schema(self, data, url):
+        exception_producer_key = url.split('8080/')[-1]
+        if self.is_null_value_valid and connexion.utils.is_null(data):
+            return None
+        errors = list(self.validator.iter_errors(data))
+        if errors:
+            if exception_producer_key in EXCEPTION_PRODUCERS:
+                EXCEPTION_PRODUCERS[exception_producer_key](data, errors)
+            else:
+                raise BadRequest(description=','.join([e.message for e in errors]))
+
+
+def main(db=None):
+    if db is None:
+        from swagger_server import db
 
     connex_app = connexion.FlaskApp(
         __name__,
@@ -48,7 +51,7 @@ def main():
     for error, handler in EXCEPTION_HANDLERS.items():
         connex_app.add_error_handler(error, handler)
 
-    connex_app.run(port=8080)
+    connex_app.run(port=8080, server=os.getenv('FLASK_SERVER', 'gevent'))
 
 
 if __name__ == '__main__':
