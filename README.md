@@ -27,3 +27,4 @@ http://localhost:8080/ui/
 ## Links
 - [DockerHub](https://hub.docker.com/repository/docker/dimazet/ya-backend-school/general)
 - [GitHub](https://github.com/DimaZet/yandex-backend-school)
+- [Swagger UI Deployed App](http://130.193.38.145:8080/ui/)
