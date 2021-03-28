@@ -7,7 +7,7 @@ COPY requirements.txt /usr/src/app/
 
 RUN apk add --no-cache --virtual .build-deps gcc musl-dev libxml2-dev libxslt1-dev zlib1g-dev g++ \
     && pip3 install --no-cache-dir -r requirements.txt \
-    && apk del .build-deps gcc musl-dev libxml2-dev libxslt1-dev zlib1g-dev g++
+    && apk del .build-deps
 
 COPY . /usr/src/app
 
