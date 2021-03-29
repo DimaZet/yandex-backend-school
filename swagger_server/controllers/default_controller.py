@@ -26,7 +26,7 @@ def couriers_courier_id_get(courier_id):  # noqa: E501
     :rtype: CourierGetResponse
     """
     courier = get_courier_or_throw_404(courier_id)
-    rating, earnings = get_courier_statistic(courier_id)
+    rating, earnings = get_courier_statistic(courier_id, courier.assign_time)
     return CourierGetResponse(
         courier.mongo_id,
         courier.courier_type.value,

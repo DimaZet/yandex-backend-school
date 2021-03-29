@@ -24,30 +24,42 @@ def is_compatible_times(working_hours: Courier.working_hours, delivery_hours: Or
     return False
 
 
-def get_courier_statistic(courier_id):
+def get_courier_statistic(courier_id, assign_time=None):
     rating = None
     earnings = None
-    courier = get_courier_or_throw_404(courier_id)
     kwargs = {}
-    if courier.assign_time is not None:
-        kwargs = {"delivery_end_time__lt": courier.assign_time}
-    orders = Order.objects(
-        assigned_to=courier.mongo_id,
+    if assign_time is not None:
+        kwargs = {"delivery_end_time__lt": assign_time}
+
+    pipeline_grouping_by_region = [{
+        "$group": {
+            "_id": "$region",
+            "count":  {
+                "$sum": 1
+            },
+            "duration": {
+                "$sum": {
+                    "$subtract": [
+                        "$delivery_end_time",
+                        "$delivery_start_time"
+                    ]
+                }
+            }
+        }
+    }]
+
+    completed_orders = Order.objects(
+        assigned_to=courier_id,
         status=Order.OrderStatus.COMPLETED,
         **kwargs
     )
-    if len(orders) > 0:
-        earnings = 0
-        orders_by_region = defaultdict(lambda: (timedelta(), 0))
-        for o in orders:
-            c = Courier.COURIER_EARNINGS_MULTIPLY[o.taken_by]
-            earnings += c * 500
-            summ, count = orders_by_region[o.region]
-            summ += o.delivery_end_time - o.delivery_start_time
-            count += 1
-            orders_by_region[o.region] = (summ, count)
-        t = min([s_c[0].total_seconds() / s_c[1] for region, s_c in orders_by_region.items()])
+
+    if completed_orders.count() != 0:
+        orders = completed_orders.aggregate(pipeline_grouping_by_region)
+        t = min([order['duration'] / 6000 / order['count'] for order in orders])
         rating = (60 * 60 - min(t, 60 * 60)) / (60 * 60) * 5
+        earnings = completed_orders.sum('price')
+
     return rating, earnings
 
 
@@ -76,7 +88,6 @@ def orders_after_patch(courier_id):
                     o.region in courier.regions):
                 o.status = Order.OrderStatus.UNASSIGNED
                 o.assigned_to = None
-                o.taken_by = None
                 o.save()
                 unassigned_count += 1
         if len(orders) == unassigned_count:
@@ -113,7 +124,6 @@ def orders_assign(courier_id):
         for o in orders:
             o.status = Order.OrderStatus.ASSIGNED
             o.assigned_to = courier.mongo_id
-            o.taken_by = courier.courier_type
             o.save()
         courier.assign_time = datetime.utcnow()
         courier.save()
@@ -137,13 +147,14 @@ def orders_complete(courier_id, order_id, complete_time):
         raise BadRequest(description=nf.description)
     if order.assigned_to != courier.mongo_id:
         raise BadRequest(f"order with id {order_id} unassigned on courier with id {courier_id}")
-    if order.status == order.OrderStatus.ASSIGNED:
+    if order.status == Order.OrderStatus.ASSIGNED:
         if courier.last_delivered_time is None:
             courier.last_delivered_time = courier.assign_time
             courier.save()
         order.delivery_start_time = courier.last_delivered_time
         order.delivery_end_time = complete_time
         order.status = Order.OrderStatus.COMPLETED
+        order.price = Courier.COURIER_EARNINGS_MULTIPLY[courier.courier_type] * 500
         order.save()
 
         courier.last_delivered_time = complete_time

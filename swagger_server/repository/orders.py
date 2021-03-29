@@ -22,7 +22,7 @@ class Order(db.Document):
     assigned_to = IntField(null=True, default=None)
     delivery_start_time = DateTimeField(null=True)
     delivery_end_time = DateTimeField(null=True)
-    taken_by = EnumField(Courier.CourierType, null=True)
+    price = IntField(min_value=0, null=True)
 
     def to_dto(self):
         return OrderItem(
