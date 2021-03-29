@@ -21,8 +21,10 @@ class RequestBodyValidator(connexion.decorators.validation.RequestBodyValidator)
 
 
 def main(db=None):
+
     if db is None:
-        from swagger_server import db
+        from flask_mongoengine import MongoEngine
+        db = MongoEngine()
 
     connex_app = connexion.FlaskApp(
         __name__,

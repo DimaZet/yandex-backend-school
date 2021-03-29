@@ -1,8 +1,6 @@
-from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from dateutil import parser
-from jsonschema import ValidationError
 from werkzeug.exceptions import NotFound, BadRequest
 
 from swagger_server.models import InlineResponse200, CouriersIdsCouriers, OrdersCompletePostResponse

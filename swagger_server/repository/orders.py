@@ -1,14 +1,12 @@
-from enum import Enum, auto
+from enum import Enum
 
 from mongoengine import *
 
-from swagger_server import db
 from swagger_server.models import OrderItem
-from swagger_server.repository.courier import Courier
 from swagger_server.repository.validator import Validator
 
 
-class Order(db.Document):
+class Order(Document):
     class OrderStatus(Enum):
         UNASSIGNED = "UNASSIGNED"
         ASSIGNED = "ASSIGNED"
