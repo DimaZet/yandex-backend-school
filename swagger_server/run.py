@@ -51,7 +51,7 @@ def main(db=None):
     for error, handler in EXCEPTION_HANDLERS.items():
         connex_app.add_error_handler(error, handler)
 
-    connex_app.run(port=8080, server=os.getenv('FLASK_SERVER', 'gevent'))
+    connex_app.run(port=8080, server=os.getenv('FLASK_SERVER', None))
 
 
 if __name__ == '__main__':
